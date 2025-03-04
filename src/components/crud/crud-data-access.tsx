@@ -10,6 +10,12 @@ import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
 import { useTransactionToast } from '../ui/ui-layout'
 
+interface JounalEntryArgs{
+  title: string, 
+  message : string,
+  signer : PublicKey
+}
+
 export function useCrudProgram() {
   const { connection } = useConnection()
   const { cluster } = useCluster()
@@ -20,7 +26,7 @@ export function useCrudProgram() {
 
   const accounts = useQuery({
     queryKey: ['crud', 'all', { cluster }],
-    queryFn: () => program.account.crud.all(),
+    queryFn: () => program.account.journalEntry.all(),
   })
 
   const getProgramAccount = useQuery({
@@ -28,15 +34,15 @@ export function useCrudProgram() {
     queryFn: () => connection.getParsedAccountInfo(programId),
   })
 
-  const initialize = useMutation({
+  const crate_entry = useMutation<string, Error, JounalEntryArgs>({
     mutationKey: ['crud', 'initialize', { cluster }],
-    mutationFn: (keypair: Keypair) =>
-      program.methods.initialize().accounts({ crud: keypair.publicKey }).signers([keypair]).rpc(),
+    mutationFn: async({title, message}) =>
+      program.methods.createJournalEntry(title, message).rpc(),
     onSuccess: (signature) => {
       transactionToast(signature)
       return accounts.refetch()
     },
-    onError: () => toast.error('Failed to initialize account'),
+    onError: () => toast.error('Failed to create entry'),
   })
 
   return {
@@ -44,7 +50,7 @@ export function useCrudProgram() {
     programId,
     accounts,
     getProgramAccount,
-    initialize,
+    crate_entry
   }
 }
 
@@ -55,50 +61,35 @@ export function useCrudProgramAccount({ account }: { account: PublicKey }) {
 
   const accountQuery = useQuery({
     queryKey: ['crud', 'fetch', { cluster, account }],
-    queryFn: () => program.account.crud.fetch(account),
+    queryFn: () => program.account.journalEntry.fetch(account),
   })
-
-  const closeMutation = useMutation({
-    mutationKey: ['crud', 'close', { cluster, account }],
-    mutationFn: () => program.methods.close().accounts({ crud: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
+  
+  const update_entry = useMutation<string, Error, JounalEntryArgs>({
+    mutationKey: ['crud', 'initialize', { cluster }],
+    mutationFn: async({title, message}) =>
+      program.methods.updateJournalEntry(title, message).rpc(),
+    onSuccess: (signature) => {
+      transactionToast(signature)
       return accounts.refetch()
     },
+    onError: () => toast.error('Failed to update entry'),
   })
 
-  const decrementMutation = useMutation({
-    mutationKey: ['crud', 'decrement', { cluster, account }],
-    mutationFn: () => program.methods.decrement().accounts({ crud: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
+  const delete_entry = useMutation({
+    mutationKey: ['crud', 'initialize', { cluster }],
+    mutationFn: (title: string) =>
+      program.methods.deleteJournalEntry().rpc(),
+    onSuccess: (signature) => {
+      transactionToast(signature)
+      return accounts.refetch()
     },
+    onError: () => toast.error('Failed to delete entry'),
   })
 
-  const incrementMutation = useMutation({
-    mutationKey: ['crud', 'increment', { cluster, account }],
-    mutationFn: () => program.methods.increment().accounts({ crud: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
-    },
-  })
-
-  const setMutation = useMutation({
-    mutationKey: ['crud', 'set', { cluster, account }],
-    mutationFn: (value: number) => program.methods.set(value).accounts({ crud: account }).rpc(),
-    onSuccess: (tx) => {
-      transactionToast(tx)
-      return accountQuery.refetch()
-    },
-  })
 
   return {
     accountQuery,
-    closeMutation,
-    decrementMutation,
-    incrementMutation,
-    setMutation,
+    update_entry,
+    delete_entry
   }
 }
