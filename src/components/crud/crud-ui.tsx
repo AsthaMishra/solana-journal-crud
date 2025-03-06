@@ -6,6 +6,7 @@ import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCrudProgram, useCrudProgramAccount } from './crud-data-access'
 import { useState } from 'react'
 import { useWallet } from '@solana/wallet-adapter-react'
+import { IconChevronsDownLeft } from '@tabler/icons-react'
 
 export function CrudCreate() {
   const [title, setTitle] = useState('');
@@ -15,9 +16,10 @@ export function CrudCreate() {
 
 const isFormValid = title.trim() !== '' && message.trim() !== '';
 
+
 const handleSubmit = () =>{
       if(publicKey && isFormValid){
-        crate_entry.mutateAsync({title, message, signer: publicKey});
+        crate_entry.mutateAsync({title, message, owner: publicKey});
       }
     };
 
@@ -28,9 +30,9 @@ const handleSubmit = () =>{
         <div> 
         <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
         <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
-          <button onClick={handleSubmit} disabled={!isFormValid}>Create</button>
+          <button  className="btn btn-xs btn-secondary btn-outline" onClick={handleSubmit} disabled={!isFormValid}>Create</button>
       </div>
-      );
+      );                              
 
 }
 
@@ -78,10 +80,28 @@ function CrudCard({ account }: { account: PublicKey }) {
 
 const isFormValid =  message.trim() !== '';
 
-const handleSubmit = () =>{
+const handleUpdateSubmit = () =>{
       if(publicKey && isFormValid){
-        update_entry.mutateAsync({ title, message, signer: publicKey});
+        update_entry.mutateAsync({ title, message, owner: publicKey}, {
+          onSuccess: () => {
+            accountQuery.refetch();
+            setMessage(message);
+          },
+        }
+          
+        );
       }
+    };
+
+    const handleDelete = () =>{
+      const title = accountQuery.data?.title ;
+      <h2 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
+      {title}
+    </h2>
+                if (title) {
+                  return delete_entry.mutateAsync( title);
+
+                }
     };
 
     if(!publicKey)
@@ -94,25 +114,23 @@ const handleSubmit = () =>{
     <div className="card card-bordered border-base-300 border-4 text-neutral-content">
       <div className="card-body items-center text-center">
         <div className="space-y-6">
-          <h2 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
+          <h1 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
             {accountQuery.data?.title}
-          </h2>
-          <p> {accountQuery.data?.message}</p>
+          </h1>
+          <h2> {accountQuery.data?.message}</h2>
+          <div> 
+      </div>
+          <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message" />
           <div className="text-center space-y-4">
-            <p>
-"helooooooooooooooooooo"
-            </p>
+          <button  className="btn btn-xs btn-secondary btn-outline"
+           onClick={handleUpdateSubmit} disabled={update_entry.isPending}
+           >Update</button>
+      </div>
+          </div>
+          <div className="text-center space-y-4">
             <button
               className="btn btn-xs btn-secondary btn-outline"
-              onClick={() => {
-                const title = accountQuery.data?.title ;
-
-                if (title) {
-                  return delete_entry.mutateAsync( title);
-
-                }
-              }
-            }
+              onClick={handleDelete}
               disabled={delete_entry.isPending}
             >
               Delete
@@ -120,6 +138,7 @@ const handleSubmit = () =>{
           </div>
         </div>
       </div>
-    </div>
+
+   
   )
 }

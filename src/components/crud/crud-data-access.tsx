@@ -13,7 +13,7 @@ import { useTransactionToast } from '../ui/ui-layout'
 interface JounalEntryArgs{
   title: string, 
   message : string,
-  signer : PublicKey
+  owner : PublicKey
 }
 
 export function useCrudProgram() {
@@ -35,14 +35,15 @@ export function useCrudProgram() {
   })
 
   const crate_entry = useMutation<string, Error, JounalEntryArgs>({
-    mutationKey: ['crud', 'initialize', { cluster }],
-    mutationFn: async({title, message}) =>
-      program.methods.createJournalEntry(title, message).rpc(),
+    mutationKey: [`journal_entry`, `create`, { cluster }],
+    mutationFn: async({title, message, owner}) =>{
+      return program.methods.createJournalEntry(title, message).rpc()
+    },
     onSuccess: (signature) => {
       transactionToast(signature)
       return accounts.refetch()
     },
-    onError: () => toast.error('Failed to create entry'),
+    onError: (error) => toast.error(`Failed to create entry : ${error.message}`),
   })
 
   return {
@@ -65,25 +66,27 @@ export function useCrudProgramAccount({ account }: { account: PublicKey }) {
   })
   
   const update_entry = useMutation<string, Error, JounalEntryArgs>({
-    mutationKey: ['crud', 'initialize', { cluster }],
-    mutationFn: async({title, message}) =>
-      program.methods.updateJournalEntry(title, message).rpc(),
+    mutationKey: [`journal_entry`, `update`, { cluster }],
+    mutationFn: async({title, message}) =>{
+      return program.methods.updateJournalEntry(title, message).rpc()
+    },
     onSuccess: (signature) => {
       transactionToast(signature)
       return accounts.refetch()
     },
-    onError: () => toast.error('Failed to update entry'),
+    onError: (error) => toast.error(`Failed to create entry : ${error.message}`),
   })
 
   const delete_entry = useMutation({
-    mutationKey: ['crud', 'initialize', { cluster }],
+    mutationKey: [`journal_entry`, `delete`, { cluster }],
     mutationFn: (title: string) =>
-      program.methods.deleteJournalEntry().rpc(),
+      program.methods.deleteJournalEntry(title).rpc()
+    ,
     onSuccess: (signature) => {
       transactionToast(signature)
       return accounts.refetch()
     },
-    onError: () => toast.error('Failed to delete entry'),
+    // onError: (error) => toast.error(`Failed to create entry : ${error.message}`),
   })
 
 

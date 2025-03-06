@@ -2,7 +2,7 @@
 
 use anchor_lang::prelude::*;
 
-declare_id!("4A7ezb2idALiqL8JPBRA99i3yXKTeZyb19DjUf5XmiqN");
+declare_id!("9HL33SC2c9Jj38iWCspzyB945QXB7xr4jP9wGTARTRpD");
 
 #[program]
 pub mod crud {
@@ -17,6 +17,7 @@ pub mod crud {
         journal_entry.owner = *ctx.accounts.signer.key;
         journal_entry.title = title;
         journal_entry.message = message;
+        msg!("Journal entry created");
         Ok(())
     }
 
@@ -27,10 +28,14 @@ pub mod crud {
     ) -> Result<()> {
         let journal_entry = &mut ctx.accounts.journal_entry;
         journal_entry.message = message;
+        msg!("Journal entry Updated");
+
         Ok(())
     }
 
-    pub fn delete_journal_entry(_ctx: Context<DeleteEntry>) -> Result<()> {
+    pub fn delete_journal_entry(_ctx: Context<DeleteEntry>, _title: String) -> Result<()> {
+        msg!("Journal entry deleted");
+
         Ok(())
     }
 }
@@ -42,9 +47,9 @@ pub struct DeleteEntry<'info> {
     pub signer: Signer<'info>,
     #[account(
       mut,
-      close = signer,
       seeds = [title.as_bytes(),signer.key().as_ref()],
       bump,
+      close = signer,
   )]
     pub journal_entry: Account<'info, JournalEntry>,
     pub system_program: Program<'info, System>,
